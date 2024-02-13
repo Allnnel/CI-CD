@@ -1,0 +1,58 @@
+default:
+  tags: [cicd, bash]
+
+stages:
+  - build
+  - ClangFormat
+  - tests
+  - deploy
+
+BUILD:
+  stage: build
+  script:
+    - cd src/C3_SimpleBashUtils-5/src/cat
+    - make all
+    - cd ../grep
+    - make all
+  after_script:
+    - bash src/bot.sh
+  artifacts:
+    paths:
+      - src/C3_SimpleBashUtils-5/src/cat/s21_cat
+      - src/C3_SimpleBashUtils-5/src/grep/s21_grep
+    expire_in: 30 days
+
+ClANGFORMAT:
+  stage: ClangFormat
+  script:
+    - cd src/C3_SimpleBashUtils-5/src
+    - clang-format -style=Google -n cat/*.c cat/*.h grep/*.c grep/*.h
+    - clang-format -style=Google -i cat/*.c cat/*.h grep/*.c grep/*.h
+    - git diff --exit-code 
+  after_script:
+    - bash src/bot.sh
+  allow_failure: false
+
+TESTS:
+  stage: tests
+  script:
+    - cd src/C3_SimpleBashUtils-5/src
+    - cd cat
+    - bash cat.sh
+    - cd ..
+    - cd grep
+    - bash grep.sh
+    - cd .. 
+  after_script:
+    - bash src/bot.sh     
+  allow_failure: false
+
+DEPLOY:
+  stage: deploy
+  script:
+    - bash src/deploy.sh
+  after_script:
+    - bash src/bot.sh
+  when: manual
+  allow_failure: false
+
